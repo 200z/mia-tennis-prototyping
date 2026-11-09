@@ -1,0 +1,1449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1222">
+<title>Tennis Feel Prototype v0.4</title>
+<style>
+    :root { --glass: rgba(12, 20, 36, .62); --edge: rgba(255, 255, 255, .12); --accent: #d4ec2c; --accent2: #ffb627; }
+    html, body { margin: 0; height: 100%; background: #0a1222; color: #eef2f7; overflow: hidden;
+        font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        touch-action: none; user-select: none; -webkit-user-select: none; }
+    #c { display: block; width: 100vw; height: 100vh; }
+    .box { position: fixed; background: var(--glass); border: 1px solid var(--edge); border-radius: 14px; padding: 10px 14px; font-size: 13px;
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 24px rgba(0, 0, 0, .35); }
+    #hud { left: 12px; top: 56px; line-height: 1.55; pointer-events: none; min-width: 200px; padding: 0; overflow: hidden; }
+    #hud .hd { background: linear-gradient(90deg, #1565c0, #283593); padding: 6px 14px; font-weight: 700; font-size: 12px; letter-spacing: 1px; display: flex; justify-content: space-between; }
+    #hud .sc { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 6px 14px 2px; font-size: 13px; }
+    #hud .sc b { font-size: 30px; font-variant-numeric: tabular-nums; color: #fff; }
+    #hud .sc .me { color: #64b5f6; } #hud .sc .ai { color: #ef9a9a; }
+    #hud .rows { padding: 6px 14px 10px; display: grid; grid-template-columns: auto auto; column-gap: 14px; font-size: 12px; opacity: .92; }
+    #hud .rows span:nth-child(even) { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    #hud b { color: var(--accent); }
+    #help { left: 12px; bottom: 12px; line-height: 1.65; max-width: 290px; font-size: 12px; opacity: .9; }
+    #help b { color: var(--accent); }
+    kbd { display: inline-block; min-width: 16px; padding: 0 5px; border-radius: 4px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .25);
+        border-bottom-width: 2px; font: 700 11px/16px system-ui, sans-serif; text-align: center; color: #fff; }
+    #msg { position: fixed; left: 50%; top: 15%; transform: translateX(-50%); font-size: 34px; font-weight: 900; letter-spacing: 1px;
+        text-align: center; text-shadow: 0 3px 0 rgba(0, 0, 0, .35), 0 0 22px currentColor; pointer-events: none; transition: opacity .5s; white-space: nowrap; }
+    #msg small { display: block; font-size: 15px; font-weight: 600; margin-top: 6px; letter-spacing: 0; text-shadow: 0 2px 6px #000; color: #fff; opacity: .9; }
+    #meters { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(500px, 70vw); pointer-events: none; font-size: 11px;
+        background: var(--glass); border: 1px solid var(--edge); border-radius: 14px; padding: 8px 14px 4px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    .bar { position: relative; height: 12px; background: rgba(255, 255, 255, .08); border-radius: 6px; overflow: hidden; margin: 4px 0 8px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .5); }
+    #perfectZone { position: absolute; top: 0; bottom: 0; background: linear-gradient(180deg, #7dff9e, #2ecc71); box-shadow: 0 0 10px #2ecc71; }
+    #okZoneL, #okZoneR { position: absolute; top: 0; bottom: 0; background: rgba(255, 196, 60, .22); }
+    #okZoneL { background: linear-gradient(90deg, rgba(255, 90, 80, .25), rgba(255, 196, 60, .3)); }
+    #okZoneR { background: linear-gradient(90deg, rgba(255, 196, 60, .3), rgba(255, 90, 80, .25)); }
+    #timingMark { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 8px #fff, 0 0 2px #000; display: none; transition: left .12s; }
+    #powerFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: linear-gradient(90deg, #4cd97b, #ffd34d 60%, #ff5a4d); box-shadow: 0 0 10px rgba(255, 211, 77, .6); }
+    .lbl { display: flex; justify-content: space-between; opacity: .8; letter-spacing: .3px; }
+    #panel { right: 12px; top: 12px; width: 260px; max-height: calc(100vh - 44px); overflow: auto; }
+    #panel h3 { margin: 0; font-size: 13px; cursor: pointer; letter-spacing: .5px; }
+    #panel.collapsed .body { display: none; }
+    #panel label { display: block; margin-top: 8px; font-size: 12px; }
+    #panel input[type=range] { width: 100%; accent-color: var(--accent); }
+    #panel input[type=checkbox] { accent-color: var(--accent); }
+    #panel .row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    #panel button { flex: 1; padding: 6px; border: 1px solid var(--edge); border-radius: 8px; background: rgba(255, 255, 255, .08); color: #fff; cursor: pointer; font-weight: 600; }
+    #panel button.on { background: linear-gradient(180deg, #e6ff5c, #b5cf12); color: #10220a; font-weight: 800; border-color: transparent; }
+    #touch, #ovTouch, #rotate { display: none; }
+    body.touch #ovTouch { display: block; text-align: center; max-width: 86vw; line-height: 1.6; }
+    .zhint { position: fixed; bottom: calc(14px + env(safe-area-inset-bottom)); font-size: 12px; font-weight: 700; opacity: .5; pointer-events: none; text-align: center;
+        padding: 6px 10px; border: 1px dashed rgba(255, 255, 255, .35); border-radius: 10px; }
+    .zhint small { font-weight: 500; opacity: .85; }
+    #zoneL { left: calc(12px + env(safe-area-inset-left)); }
+    #zoneR { right: calc(12px + env(safe-area-inset-right)); }
+    #swingTip { position: fixed; display: none; transform: translate(-50%, -150%); padding: 4px 10px; border-radius: 999px; font-weight: 900; font-size: 15px; pointer-events: none; color: #10220a; }
+    #swingTip.top { background: #ffc94d; } #swingTip.flat { background: #7cc6ff; }
+    body.touch #touch { display: block; }
+    body.touch #help { display: none; }
+    #stick { position: fixed; width: 110px; height: 110px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .06); display: none; pointer-events: none; }
+    #stickKnob { position: absolute; left: 35px; top: 35px; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #9aa7b8); }
+    #ctrl { position: fixed; left: 12px; top: 12px; display: flex; gap: 8px; z-index: 5; }
+    #ctrl button, #overlay button { padding: 7px 14px; border: 1px solid var(--edge); border-radius: 10px; background: var(--glass); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform .1s, filter .15s; }
+    #ctrl button:hover, #overlay button:hover { filter: brightness(1.25); transform: translateY(-1px); }
+    #overlay { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(10, 18, 34, .55), rgba(5, 8, 16, .88)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 10; }
+    #overlay.hidden { display: none; }
+    #ctrl { z-index: 11; }  /* above the start overlay so the language button is reachable there */
+    #hud .hd { gap: 12px; }
+    #overlay .modes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 92vw; }
+    #overlay .modes button { font-size: 14px; padding: 8px 16px; margin: 0; border: 1px solid var(--edge); border-radius: 999px; background: rgba(255, 255, 255, .08); color: #fff; font-weight: 700; }
+    #overlay .modes button.on { background: linear-gradient(180deg, #e6ff5c, #b5cf12); color: #10220a; border-color: transparent; }
+    #overlay .logo { width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fbffc4, #d4ec2c 45%, #8fae12);
+        box-shadow: 0 0 40px rgba(212, 236, 44, .55); position: relative; animation: bounce 1.1s ease-in-out infinite; }
+    #overlay .logo::before, #overlay .logo::after { content: ''; position: absolute; top: 6px; bottom: 6px; width: 60px; border: 4px solid rgba(255, 255, 255, .9); border-radius: 50%; }
+    #overlay .logo::before { left: -38px; border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+    #overlay .logo::after { right: -38px; border-right-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
+    #overlay .logo { overflow: hidden; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+    #overlay h2 { margin: 0; font-size: 40px; font-weight: 900; letter-spacing: 2px; background: linear-gradient(180deg, #ffffff, #b9c6da); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #overlay p { margin: 0; opacity: .8; font-size: 14px; }
+    #overlay button { font-size: 20px; padding: 13px 44px; margin-top: 6px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #e6ff5c, #b5cf12); color: #10220a; font-weight: 900;
+        box-shadow: 0 8px 24px rgba(181, 207, 18, .45); }
+    @media (max-width: 640px) {
+        #panel { width: 128px; padding: 8px 10px; } #panel:not(.collapsed) { width: 230px; }
+        #panel h3 { font-size: 11px; }
+        #hud { transform: scale(.78); transform-origin: top left; }
+        #help { display: none; }
+        #msg { font-size: 26px; top: 30%; }
+    }
+    /* ---- mobile (touch) layout ---- */
+    body.touch #ctrl { left: calc(10px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top)); }
+    body.touch #ctrl button { min-height: 40px; padding: 8px 12px; font-size: 14px; }
+    body.touch #overlay .modes button { min-height: 40px; }
+    body.touch #panel { right: calc(10px + env(safe-area-inset-right)); top: calc(8px + env(safe-area-inset-top)); width: 150px; padding: 9px 10px; }
+    body.touch #panel:not(.collapsed) { width: 250px; max-height: calc(100vh - 30px); }
+    body.touch #panel h3 { font-size: 12px; }
+    body.touch #msg { white-space: normal; width: 52vw; top: 22%; }
+    body.touch #msg small { font-size: 13px; }
+    .zhint { max-width: 22vw; }
+    body.touch #meters { width: min(360px, 40vw); bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px 10px 2px; }
+    body.touch #hud { left: calc(10px + env(safe-area-inset-left)); top: calc(58px + env(safe-area-inset-top)); }
+    @media (max-height: 500px) {
+        body.touch #hud { transform: scale(.66); transform-origin: top left; }
+        body.touch #msg { font-size: 22px; top: 20%; } body.touch #msg small { font-size: 11px; }
+        .zhint { font-size: 11px; padding: 4px 8px; }
+        body.touch #overlay { gap: 8px; } body.touch #overlay h2 { font-size: 26px; } body.touch #overlay .logo { width: 54px; height: 54px; }
+        body.touch #overlay p { font-size: 12px; } body.touch #overlay button { font-size: 16px; padding: 10px 30px; }
+        body.touch #overlay .modes button { font-size: 13px; padding: 6px 12px; }
+        body.touch #meters .lbl { font-size: 10px; }
+    }
+    @media (orientation: portrait) {
+        /* the court is landscape: on a phone held upright show a full-screen rotate prompt (iOS Safari cannot lock orientation) */
+        body.touch #rotate { display: block; position: fixed; inset: 0; z-index: 20; background: rgba(5, 8, 16, .94); color: #fff; font-weight: 800; font-size: 20px;
+            padding-top: 42vh; text-align: center; }
+        body.touch #rotate::before { content: '📱↻'; display: block; font-size: 54px; margin-bottom: 14px; }
+    }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ctrl"><button id="btnPause">⏸ 暂停</button><button id="btnRestart">↺ 重新开始</button><button id="btnLang" title="Language / 语言">🌐 中文</button></div>
+<div id="overlay"><div class="logo"></div><h2 id="ovTitle">网球手感原型</h2><p id="ovSub">按 Enter 或点击按钮开始；游戏中 P / Esc 暂停</p><div class="modes"><button data-mode="machine" class="on">🎾 发球机</button><button data-mode="rally">🏆 对打 AI</button><button data-mode="pvp">⚔ 双人对战</button><button data-mode="doubles">👥 双打</button></div>
+<div class="modes p2row" style="display:none"><button data-p2="none">我 + AI 队友 vs 2 AI</button><button data-p2="mate">P1 + P2 同队 vs 2 AI</button><button data-p2="opp" class="on">P1+AI vs P2+AI</button></div>
+<p id="ovTouch">左边拖动 = 移动（不碰就自动跑位） · 右边按住蓄力、松手击球 · 横划 = 平击<br>双人模式需要键盘</p>
+<button id="btnStart">▶ 开始</button></div>
+
+<div id="hud" class="box"></div>
+<div id="msg"></div>
+
+<div id="meters">
+    <div class="lbl"><span>◀ 早（拉斜线）</span><span>击球时机</span><span>晚（推直线/反向）▶</span></div>
+    <div class="bar" id="timingBar"><div id="okZoneL"></div><div id="okZoneR"></div><div id="perfectZone"></div><div id="timingMark"></div></div>
+    <div class="lbl"><span>力量（按住蓄力）</span><span id="powerTxt"></span></div>
+    <div class="bar"><div id="powerFill"></div></div>
+</div>
+
+<div id="help" class="box">
+    <div id="help1"><b>操作</b><br>
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键 移动　<kbd>Shift</kbd> 冲刺<br>
+    按住 <kbd>J</kbd> 或 <kbd>空格</kbd> 蓄力，松开 = 上旋<br>
+    按住 <kbd>K</kbd> 蓄力，松开 = 平击<br></div>
+    <div id="help2" style="display:none"><b>双人操作（同一键盘，方向按屏幕）</b><br>
+    <b style="color:#64b5f6">P1</b> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动 <kbd>左Shift</kbd> 冲刺 · <kbd>F</kbd>/<kbd>空格</kbd> 上旋 <kbd>G</kbd> 平击<br>
+    <b style="color:#81c784">P2</b> 方向键 移动 <kbd>右Shift</kbd> 冲刺 · <kbd>.</kbd> 上旋 <kbd>/</kbd> 平击（或小键盘 <kbd>1</kbd>/<kbd>2</kbd>）<br></div>
+    <b>松开的瞬间 = 击球时刻</b>（球到身前黄点时松开最准）<br>
+    早松 → 拉斜线，晚松 → 往反方向；移动中击球会更不准<br>
+    <kbd>P</kbd>/<kbd>Esc</kbd> 暂停　<kbd>Enter</kbd> 开始　<span id="helpR"><kbd>R</kbd> 重置统计　</span><kbd>H</kbd> 隐藏帮助
+</div>
+
+<div id="panel" class="box collapsed">
+    <h3 id="panelTitle">⚙ 调参面板（点我展开/折叠）</h3>
+    <div class="body">
+        <div class="row">
+            <button data-mode="machine" class="on">发球机</button>
+            <button data-mode="rally">对打 AI</button>
+            <button data-mode="pvp">双人对战</button>
+            <button data-mode="doubles">双打</button>
+        </div>
+        <div class="row p2row" style="display:none"><button data-p2="none">单人+AI队友</button><button data-p2="mate">P2 当队友</button><button data-p2="opp" class="on">P2 当对手</button></div>
+        <div id="sliders"></div>
+        <label><input type="checkbox" id="optPredict" checked> 显示来球落点预测</label>
+        <label><input type="checkbox" id="optZone" checked> 显示击球区</label>
+        <label><input type="checkbox" id="optSlow"> 慢动作 0.5x</label>
+        <label><input type="checkbox" id="optBot"> 自动演示（机器人打）</label>
+        <label><input type="checkbox" id="optAuto"> 自动跑位（手机默认开）</label>
+        <div class="row"><button id="btnReset">重置统计</button><button id="btnDefaults">恢复默认参数</button></div>
+    </div>
+</div>
+
+<div id="touch">
+    <div id="zoneL" class="zhint">拖动 = 移动<br><small>不碰 = 自动跑位</small></div>
+    <div id="zoneR" class="zhint">按住蓄力 · 松手击球<br><small>横划 = 平击，不划 = 上旋</small></div>
+    <div id="stick"><div id="stickKnob"></div></div>
+    <div id="swingTip"></div>
+</div>
+<div id="rotate">请把手机横过来玩</div>
+
+<script>
+'use strict';
+
+// ---------- Language (English default, 中文 optional; choice remembered in localStorage) ----------
+// Source strings stay in Chinese; EN maps them to English. t(s) returns the string for the current language.
+const EN = {
+    '⏸ 暂停': '⏸ Pause', '↺ 重新开始': '↺ Restart', '▶ 开始': '▶ Start', '▶ 继续': '▶ Resume',
+    '网球手感原型': 'Tennis Feel Prototype', '已暂停': 'Paused',
+    '按 Enter 或点击按钮开始；游戏中 P / Esc 暂停': 'Press Enter or click the button to start; P / Esc pauses during play',
+    '按 P / Esc / Enter 或点击按钮继续': 'Press P / Esc / Enter or click the button to resume',
+    '🎾 发球机': '🎾 Ball machine', '🏆 对打 AI': '🏆 Rally vs AI', '⚔ 双人对战': '⚔ 2 players', '👥 双打': '👥 Doubles',
+    '🎾 发球机练习': '🎾 Ball machine practice',
+    '我 + AI 队友 vs 2 AI': 'Me + AI partner vs 2 AI', 'P1 + P2 同队 vs 2 AI': 'P1 + P2 together vs 2 AI',
+    '◀ 早（拉斜线）': '◀ Early (cross-court)', '击球时机': 'Timing', '晚（推直线/反向）▶': 'Late (down the line / reverse) ▶',
+    '力量（按住蓄力）': 'Power (hold to charge)',
+    '操作': 'Controls', '/ 方向键 移动': '/ arrow keys: move', '冲刺': 'sprint', '按住': 'Hold', '或': 'or', '空格': 'Space',
+    '蓄力，松开 = 上旋': 'to charge, release = topspin', '蓄力，松开 = 平击': 'to charge, release = flat',
+    '双人操作（同一键盘，方向按屏幕）': '2-player controls (one keyboard, directions follow the screen)',
+    '移动': 'move', '左Shift': 'Left Shift', '右Shift': 'Right Shift', '冲刺 ·': 'sprint ·', '方向键 移动': 'Arrow keys: move',
+    '上旋': 'Topspin', '平击': 'Flat', '平击（或小键盘': 'flat (or numpad', '）': ')',
+    '松开的瞬间 = 击球时刻': 'The moment you release = the moment you hit',
+    '（球到身前黄点时松开最准）': ' (most accurate when the ball reaches the yellow dot in front of you)',
+    '早松 → 拉斜线，晚松 → 往反方向；移动中击球会更不准': 'Release early → cross-court, late → the other way; hitting on the move is less accurate',
+    '暂停': 'pause', '开始': 'start', '重置统计': 'Reset stats', '隐藏帮助': 'hide help',
+    '⚙ 调参面板（点我展开/折叠）': '⚙ Tuning panel (click to expand / collapse)',
+    '发球机': 'Ball machine', '对打 AI': 'Rally vs AI', '双人对战': '2 players', '双打': 'Doubles',
+    '单人+AI队友': 'Solo + AI partner', 'P2 当队友': 'P2 as partner', 'P2 当对手': 'P2 as opponent',
+    '显示来球落点预测': 'Show predicted bounce', '显示击球区': 'Show hitting zone', '慢动作 0.5x': 'Slow motion 0.5x',
+    '自动演示（机器人打）': 'Auto demo (bot plays)', '恢复默认参数': 'Restore defaults',
+    // sliders
+    '判定窗口（总容错）': 'Timing window (total)', '完美窗口': 'Perfect window', '来球速度': 'Incoming ball speed',
+    '来球上旋': 'Incoming topspin', '移动速度': 'Move speed', '冲刺倍率': 'Sprint multiplier', '起步/急停加速度': 'Start/stop acceleration',
+    '蓄满所需时间': 'Time to full charge', '蓄力时移动速度': 'Move speed while charging', '上旋下坠强度': 'Topspin dip strength',
+    '够球范围': 'Reach', 'AI 移动速度': 'AI move speed', 'AI 失误率': 'AI error rate',
+    // names / HUD
+    '你': 'You', 'AI 队友': 'AI partner', '我方': 'Us', '暂停中': 'PAUSED', '当前回合': 'Current rally', '最长回合': 'Longest rally',
+    ' 拍': ' shots', '最快': 'Top speed', '击球': 'Hits', '挥空/没够到': 'Misses', '界内率': 'In %', '完美时机': 'Perfect timing', '均速': 'Avg speed',
+    // shot feedback
+    ' 接球': ' to receive', '下网': 'Into the net', ' 下网': ' hits the net',
+    '力量不够 / 平击太低 —— 试试上旋或多蓄点力': 'Not enough power / flat shot too low: try topspin or charge more',
+    '深球 ✓': 'Deep ✓', '浅球': 'Short', '界内 ✓': 'In ✓', '出界': 'Out', ' 出界': ' is out',
+    '太长了 —— 平击力量过大？试试上旋': 'Too long: too much power on a flat shot? Try topspin', '偏出边线': 'Wide of the sideline',
+    '来球出界（不用接）': 'Incoming ball out (let it go)', '制胜分！': 'Winner!', '没接到': 'Missed it',
+    '脚步：提前移动到球的落点后方': 'Footwork: get behind the bounce earlier', ' 没够到': ' could not reach it',
+    '完美！': 'Perfect!', '早 ': 'Early ', '晚 ': 'Late ', '中路': 'middle', '斜线': 'cross-court', '直线': 'down the line',
+    '正手': 'forehand', '反手': 'backhand', '站稳 ✓': 'Set feet ✓', '移动中击球 -': 'Hit on the move -', '% 力量': '% power',
+    '够得太远': 'Reaching too far', '离球太近（挤）': 'Too close to the ball (jammed)',
+    '没够到': 'Could not reach', '脚步：往球的侧后方站，留出正手/反手空间': 'Footwork: stand behind and to the side of the ball to leave room for the swing',
+    '挥拍太早': 'Swung too early', '等球到身前的击球线再松开': 'Wait for the ball to reach the hitting line in front of you, then release',
+    '太晚了': 'Too late', '球已经过了击球点': 'The ball is already past the contact point',
+    'ACE  ·  网球手感原型  ·  RALLY': 'ACE  ·  TENNIS FEEL PROTOTYPE  ·  RALLY',
+    // mobile
+    '点按钮继续': 'Tap the button to resume', '点「开始」，游戏中点左上角暂停': 'Tap Start; tap Pause (top left) during play', '⚙ 调参（点开）': '⚙ Tuning (tap)',
+    '拖动 = 移动': 'Drag = move', '不碰 = 自动跑位': 'Leave it = auto footwork', '按住蓄力 · 松手击球': 'Hold to charge · release to hit',
+    '横划 = 平击，不划 = 上旋': 'Swipe sideways = flat, no swipe = topspin', '请把手机横过来玩': 'Rotate your phone to landscape to play',
+    '左边拖动 = 移动（不碰就自动跑位） · 右边按住蓄力、松手击球 · 横划 = 平击': 'Left side: drag to move (leave it for auto footwork) · Right side: hold to charge, release to hit · swipe sideways = flat',
+    '双人模式需要键盘': '2-player modes need a keyboard', '自动跑位（手机默认开）': 'Auto footwork (on by default on phones)',
+};
+let LANG = 'en';
+try { if (localStorage.getItem('tennisLang') === 'zh') LANG = 'zh'; } catch (err) { /* storage blocked: stay on English */ }
+const t = s => (LANG === 'en' && s && EN[s] !== undefined) ? EN[s] : s;
+// Elements whose text is rewritten by code (setPaused / HUD / sliders) are skipped by the static walker.
+const I18N_SKIP = new Set(['btnLang', 'btnPause', 'ovTitle', 'ovSub', 'btnStart', 'hud', 'msg', 'powerTxt', 'sliders']);
+function translateStatic() {
+    const walk = node => {
+        if (node.nodeType === 3) {
+            if (node.__zh === undefined) node.__zh = node.nodeValue;
+            const m = node.__zh.match(/^(\s*)([\s\S]*?)(\s*)$/);
+            node.nodeValue = m[2] ? m[1] + t(m[2]) + m[3] : node.__zh;
+            return;
+        }
+        if (node.nodeType !== 1 || node.tagName === 'SCRIPT' || node.tagName === 'STYLE' || I18N_SKIP.has(node.id)) return;
+        node.childNodes.forEach(walk);
+    };
+    walk(document.body);
+}
+function applyLang() {
+    document.documentElement.lang = LANG === 'en' ? 'en' : 'zh-CN';
+    document.title = LANG === 'en' ? 'Tennis Feel Prototype v0.4' : '网球手感原型 v0.4';
+    $('btnLang').textContent = LANG === 'en' ? '🌐 中文' : '🌐 English';
+    translateStatic();
+    buildSliders();
+    setPaused(game.paused);
+    updateHud();
+}
+function setLang(l) {
+    LANG = l === 'zh' ? 'zh' : 'en';
+    try { localStorage.setItem('tennisLang', LANG); } catch (err) { /* ignore */ }
+    applyLang();
+}
+
+// ---------- Court constants (metres). x = left/right, y = length (player side y > 0), z = height ----------
+const COURT = { halfW: 4.115, dblHalfW: 5.485, base: 11.885, service: 6.40, netH: 0.914, netPostH: 1.07 };
+const G = 9.8;
+const DRAG = 0.003;          // quadratic air drag coefficient
+const PHYS_DT = 1 / 240;     // physics sub-step
+const CONTACT_AHEAD = 0.4;   // contact plane distance in front of the player
+const CONTACT_SIDE = 0.75;   // forehand / backhand sweet spot offset from the body
+
+// ---------- Tunables (exposed as sliders so the team can play with the feel) ----------
+const SLIDERS = [
+    ['window', '判定窗口（总容错）', 50, 250, 5, 'ms'],
+    ['perfect', '完美窗口', 10, 80, 2, 'ms'],
+    ['feedSpeed', '来球速度', 12, 32, 0.5, 'm/s'],
+    ['feedSpin', '来球上旋', 0, 1, 0.05, ''],
+    ['moveSpeed', '移动速度', 3, 8, 0.1, 'm/s'],
+    ['sprint', '冲刺倍率', 1, 2, 0.05, 'x'],
+    ['accel', '起步/急停加速度', 8, 60, 1, 'm/s²'],
+    ['chargeTime', '蓄满所需时间', 0.3, 1.5, 0.05, 's'],
+    ['chargeMoveMul', '蓄力时移动速度', 0.2, 1, 0.05, 'x'],
+    ['topK', '上旋下坠强度', 0, 0.8, 0.02, ''],
+    ['reach', '够球范围', 0.4, 1.6, 0.05, 'm'],
+    ['aiSpeed', 'AI 移动速度', 2, 9, 0.1, 'm/s'],
+    ['aiErr', 'AI 失误率', 0, 0.6, 0.01, ''],
+];
+const DEFAULTS = { window: 110, perfect: 30, feedSpeed: 19, feedSpin: 0.5, moveSpeed: 5.5, sprint: 1.45, accel: 28,
+    chargeTime: 0.7, chargeMoveMul: 0.6, topK: 0.35, reach: 0.95, aiSpeed: 5.2, aiErr: 0.15 };
+const P = Object.assign({}, DEFAULTS);
+const OPT = { predict: true, zone: true, slow: false, bot: false, autoMove: false };
+
+// ---------- Small helpers ----------
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+// ---------- Ball physics ----------
+// Topspin adds extra downward acceleration (Magnus) proportional to speed; this is what lets a
+// topspin drive be hit harder than a flat one and still land in.
+function stepBall(b, dt, events) {
+    if (b.rolling) {
+        const f = Math.max(0, 1 - 1.5 * dt);
+        b.vx *= f; b.vy *= f;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        return;
+    }
+    const sp = Math.hypot(b.vx, b.vy, b.vz);
+    b.vz -= (G + P.topK * b.spin * sp) * dt;
+    const d = DRAG * sp * dt;
+    b.vx -= b.vx * d; b.vy -= b.vy * d;
+    const py = b.y;
+    b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+
+    // Net: the ball crossed y = 0 below the tape
+    if (!b.netChecked && py !== 0 && Math.sign(py) !== Math.sign(b.y)) {
+        b.netChecked = true;
+        if (b.z < COURT.netH && Math.abs(b.x) < COURT.dblHalfW + 0.9) {
+            b.y = py; b.vy *= -0.12; b.vx *= 0.3;
+            if (events) events.push({ type: 'net' });
+        }
+    }
+    // Bounce
+    if (b.z <= 0 && b.vz < 0) {
+        b.z = 0;
+        b.vz = -b.vz * (0.70 + 0.08 * b.spin);
+        const keep = 0.80 + 0.08 * b.spin;   // topspin "kicks" forward after the bounce
+        b.vx *= keep; b.vy *= keep;
+        b.spin *= 0.5;
+        if (b.vz < 0.5) { b.vz = 0; b.rolling = true; }
+        if (events) events.push({ type: 'bounce', x: b.x, y: b.y });
+    }
+}
+
+function cloneBall(b) { return Object.assign({}, b); }
+
+// Simulate a copy of the ball until its next bounce. Returns the bounce point or null.
+function predictBounce(b) {
+    const c = cloneBall(b);
+    for (let i = 0; i < 240 * 4; i++) {
+        const ev = [];
+        stepBall(c, PHYS_DT, ev);
+        if (ev.some(e => e.type === 'net')) return null;
+        if (ev.some(e => e.type === 'bounce')) return { x: c.x, y: c.y };
+    }
+    return null;
+}
+
+// Find the vertical launch speed so a ball hit at hSpeed lands at (to.x, to.y).
+function launchToward(from, to, hSpeed, spin) {
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const dist = Math.hypot(dx, dy);
+    const ux = dx / dist, uy = dy / dist;
+    const make = (h, vz) => ({ x: from.x, y: from.y, z: from.z, vx: ux * h, vy: uy * h, vz, spin, netChecked: false, rolling: false });
+    let h = hSpeed;
+    for (let attempt = 0; attempt < 8; attempt++) {
+        let lo = -4, hi = 16;
+        for (let k = 0; k < 28; k++) {
+            const mid = (lo + hi) / 2;
+            const p = predictBounce(make(h, mid));
+            const travelled = p ? (p.x - from.x) * ux + (p.y - from.y) * uy : -1;
+            if (travelled < dist) lo = mid; else hi = mid;
+        }
+        const b = make(h, hi);
+        if (predictBounce(b)) return b;     // clears the net and lands
+        h *= 0.88;                           // too fast to clear the net at this distance, slow down
+    }
+    return make(h * 0.8, 9);
+}
+
+// ---------- Game state ----------
+// Every person on court is an "entity". side = +1 for the near team (y > 0, camera side), -1 for the far team.
+// ctrl = 'p1' | 'p2' | 'ai'. Humans are mirrored into a local frame (x*side, y*side) so the same hitting code
+// works from either end of the court.
+const MODES = {
+    machine: '🎾 发球机练习', rally: '🏆 对打 AI', pvp: '⚔ 双人对战', doubles: '👥 双打',
+};
+const KITS = {
+    p1: { shirt: '#1565c0', shirtLight: '#42a5f5', shorts: '#0d1b3e', cap: '#ffffff', racket: '#ff6b35' },
+    p2: { shirt: '#2e7d32', shirtLight: '#81c784', shorts: '#1b1b1b', cap: '#ffeb3b', racket: '#ffeb3b' },
+    mate: { shirt: '#00838f', shirtLight: '#4dd0e1', shorts: '#0d1b3e', cap: '#ffffff', racket: '#ff6b35' },
+    ai: { shirt: '#c62828', shirtLight: '#ef5350', shorts: '#f5f5f5', cap: '#212121', racket: '#00b4d8' },
+    ai2: { shirt: '#ef6c00', shirtLight: '#ffb74d', shorts: '#f5f5f5', cap: '#212121', racket: '#00b4d8' },
+};
+function newStats() { return { hits: 0, inCount: 0, judged: 0, perfect: 0, speedSum: 0, maxSpeed: 0, whiffs: 0 }; }
+function mkEnt(id, side, ctrl, lane, kit) {
+    return { id, side, ctrl, lane, kit, x: 0, y: 0, vx: 0, vy: 0, swingT: -9, swingSide: 1,
+        charge: null, pendingSwing: null, cross: null, prevRel: null, lastErr: null, stats: newStats() };
+}
+const isHuman = e => e.ctrl !== 'ai';
+
+const game = {
+    mode: 'machine',
+    p2Role: 'opp',              // doubles only: 'none' | 'mate' | 'opp'
+    t: 0,
+    paused: true,
+    ents: [],
+    player: null,               // = the P1 entity
+    ball: null,
+    shot: null,                 // { by: side, hitter, firstBounce, resolved, predBounce }
+    serveSide: -1,
+    nextFeedAt: 0.8,
+    marks: [],
+    score: { near: 0, far: 0, rally: 0, best: 0 },
+    keys: new Set(),
+    touchMove: { x: 0, y: 0, sprint: false },
+};
+const isDoubles = () => game.mode === 'doubles';
+const halfWidth = () => isDoubles() ? COURT.dblHalfW : COURT.halfW;
+const humans = () => game.ents.filter(isHuman);
+const twoHumans = () => humans().length > 1;
+
+function buildEnts(m) {
+    const E = [];
+    if (m === 'doubles') {
+        E.push(mkEnt('p1', 1, 'p1', 1, KITS.p1));
+        E.push(game.p2Role === 'mate' ? mkEnt('p2', 1, 'p2', -1, KITS.p2) : mkEnt('mate', 1, 'ai', -1, KITS.mate));
+        E.push(game.p2Role === 'opp' ? mkEnt('p2', -1, 'p2', -1, KITS.p2) : mkEnt('ai2', -1, 'ai', -1, KITS.ai2));
+        E.push(mkEnt('ai', -1, 'ai', 1, KITS.ai));
+    } else {
+        E.push(mkEnt('p1', 1, 'p1', 0, KITS.p1));
+        if (m === 'rally') E.push(mkEnt('ai', -1, 'ai', 0, KITS.ai));
+        if (m === 'pvp') E.push(mkEnt('p2', -1, 'p2', 0, KITS.p2));
+    }
+    game.ents = E;
+    game.player = E[0];
+    E.forEach(goHome);
+}
+function home(e) { return { x: e.lane * 2.6, y: e.side * (e.lane ? 11.8 : 12.6) }; }
+function goHome(e) { const h = home(e); e.x = h.x; e.y = h.y; e.vx = e.vy = 0; }
+
+function nameOf(e) {
+    if (!e) return t('发球机');
+    if (e.ctrl === 'p1') return twoHumans() ? 'P1' : t('你');
+    if (e.ctrl === 'p2') return 'P2';
+    return e.side > 0 ? t('AI 队友') : 'AI';
+}
+function sideName(s) {
+    const hs = game.ents.filter(e => e.side === s && isHuman(e)).map(nameOf);
+    if (hs.length === 0) return s > 0 ? t('我方') : 'AI';
+    return hs.length > 1 ? hs.join('+') : (game.ents.filter(e => e.side === s).length > 1 ? teamName(hs[0]) : hs[0]);
+}
+function teamName(n) {
+    if (LANG !== 'en') return n + '队';
+    return n === 'You' ? 'Your team' : n + ' team';
+}
+function resetStats() {
+    game.ents.forEach(e => { e.stats = newStats(); e.lastErr = null; });
+    game.score = { near: 0, far: 0, rally: 0, best: 0 };
+}
+
+// ---------- Messages / HUD ----------
+const $ = id => document.getElementById(id);
+let msgTimer = 0;
+function say(main, sub, color) {
+    const el = $('msg');
+    el.innerHTML = main + (sub ? '<small>' + sub + '</small>' : '');
+    el.style.color = color || '#fff';
+    el.style.opacity = 1;
+    msgTimer = 1.6;
+}
+const pre = e => twoHumans() ? nameOf(e) + ' ' : '';
+
+function statRows(e, label) {
+    const s = e.stats;
+    const inPct = s.judged ? Math.round(100 * s.inCount / s.judged) + '%' : '-';
+    const avg = s.hits ? Math.round(s.speedSum / s.hits) : 0;
+    const L = label ? label + ' ' : '';
+    return [[L + t('击球'), s.hits], [L + t('挥空/没够到'), s.whiffs], [L + t('界内率'), '<b>' + inPct + '</b>'], [L + t('完美时机'), s.perfect],
+        [L + t('均速'), avg + ' km/h']];
+}
+function updateHud() {
+    let html = '<div class="hd"><span>' + t(MODES[game.mode]) + '</span><span>' + (game.paused ? t('暂停中') : 'LIVE') + '</span></div>';
+    if (game.mode !== 'machine') {
+        html += '<div class="sc"><span class="me">' + sideName(1) + '</span><b>' + game.score.near + '</b><span style="opacity:.5">:</span><b>'
+            + game.score.far + '</b><span class="ai">' + sideName(-1) + '</span></div>';
+    }
+    const rows = [];
+    if (game.mode !== 'machine') rows.push([t('当前回合'), game.score.rally + t(' 拍')], [t('最长回合'), game.score.best + t(' 拍')]);
+    const hs = humans();
+    if (hs.length > 1) hs.forEach(e => rows.push(...statRows(e, nameOf(e)).filter((r, i) => i !== 1 && i !== 4)));
+    else rows.push(...statRows(hs[0]), [t('最快'), Math.round(hs[0].stats.maxSpeed) + ' km/h']);
+    html += '<div class="rows">' + rows.map(r => '<span>' + r[0] + '</span><span>' + r[1] + '</span>').join('') + '</div>';
+    $('hud').innerHTML = html;
+
+    // Timing + power meters follow P1
+    const p1 = game.player;
+    $('perfectZone').style.left = (50 - 50 * P.perfect / P.window) + '%';
+    $('perfectZone').style.width = (100 * P.perfect / P.window) + '%';
+    $('okZoneL').style.left = '0'; $('okZoneL').style.width = '50%';
+    $('okZoneR').style.left = '50%'; $('okZoneR').style.width = '50%';
+    const mark = $('timingMark');
+    if (p1.lastErr !== null) {
+        mark.style.display = 'block';
+        mark.style.left = (50 + 50 * clamp(p1.lastErr / (P.window / 1000), -1, 1)) + '%';
+    } else mark.style.display = 'none';
+    const pw = p1.charge ? chargePower(p1) : 0;
+    $('powerFill').style.width = (pw * 100) + '%';
+    $('powerTxt').textContent = p1.charge ? (twoHumans() ? 'P1 ' : '') + t(p1.charge.type === 'top' ? '上旋' : '平击') + ' ' + Math.round(pw * 100) + '%' : '';
+}
+
+function chargePower(e) {
+    if (!e.charge) return 0;
+    return clamp((game.t - e.charge.t0) / P.chargeTime, 0, 1);
+}
+
+// ---------- Rally flow ----------
+function clearSwings() { game.ents.forEach(e => { e.pendingSwing = null; e.cross = null; e.prevRel = null; e.target = null; }); }
+function newBallFrom(launch, by, hitter) {
+    game.ball = launch;
+    game.shot = { by, hitter, firstBounce: null, resolved: false, predBounce: predictBounce(launch) };
+    clearSwings();
+}
+
+function feedBall() {
+    // Friendly feed to start each point. Machine mode: always from the machine. Other modes: alternate ends.
+    let from, server = null, recv;
+    if (game.mode === 'machine') { from = { x: rand(-1, 1), y: -11.6, z: 1.0 }; recv = 1; }
+    else {
+        game.serveSide = -game.serveSide;
+        const team = game.ents.filter(e => e.side === game.serveSide);
+        game.serveIdx = ((game.serveIdx || 0) + 1) % 2;
+        server = team[game.serveIdx % team.length];
+        from = { x: server.x + 0.5 * server.side * -1, y: server.y - server.side * 0.4, z: 1.0 };
+        recv = -game.serveSide;
+    }
+    const W = isDoubles() ? 4.4 : 3.4;
+    const to = { x: rand(-W, W), y: recv * rand(4.5, 9.8) };
+    newBallFrom(launchToward(from, to, P.feedSpeed * rand(0.92, 1.08), P.feedSpin), recv === 1 ? -1 : 1, server);
+    game.shot.feed = true;
+    if (server) { server.swingT = game.t; server.swingSide = 1; }
+    const rx = game.ents.filter(e => e.side === recv && isHuman(e));
+    if (twoHumans() && rx.length) say(rx.map(nameOf).join(' / ') + t(' 接球'), '', '#cfe8ff');
+}
+
+function endPoint(winner, main, sub, color) {
+    if (!game.shot || game.shot.resolved) return;
+    game.shot.resolved = true;
+    if (game.mode !== 'machine' && winner) {
+        if (winner > 0) game.score.near++; else game.score.far++;
+        game.score.best = Math.max(game.score.best, game.score.rally);
+        game.score.rally = 0;
+    }
+    if (main) say(main, sub, color);
+    game.nextFeedAt = game.t + 1.4;
+    clearSwings();
+}
+
+function firstHumanOn(s) { return game.ents.find(e => e.side === s && isHuman(e)); }
+
+function onBallEvent(ev) {
+    const shot = game.shot;
+    if (!shot || shot.resolved) return;
+    const by = shot.by, h = shot.hitter, hHuman = h && isHuman(h) && !shot.feed;
+    if (ev.type === 'net') {
+        if (hHuman) { h.stats.judged++; endPoint(-by, pre(h) + t('下网'), t('力量不够 / 平击太低 —— 试试上旋或多蓄点力'), '#ff7b6b'); }
+        else endPoint(game.mode === 'machine' ? null : -by, nameOf(h) + t(' 下网'), '', '#8fe38f');
+        return;
+    }
+    if (ev.type !== 'bounce') return;
+    if (!shot.firstBounce) {
+        const targetSideOk = Math.sign(ev.y) === -by;
+        const inside = targetSideOk && Math.abs(ev.x) <= halfWidth() && Math.abs(ev.y) <= COURT.base;
+        shot.firstBounce = { x: ev.x, y: ev.y, in: inside };
+        game.marks.push({ x: ev.x, y: ev.y, in: inside, t: game.t });
+        if (hHuman) {
+            h.stats.judged++;
+            if (inside) {
+                h.stats.inCount++;
+                const depth = Math.abs(ev.y) > COURT.base - 2.5 ? t('深球 ✓') : (Math.abs(ev.y) < COURT.service ? t('浅球') : '');
+                if (game.mode === 'machine') endPoint(null, t('界内 ✓'), depth, '#8fe38f');
+            } else {
+                endPoint(-by, pre(h) + t('出界'), Math.abs(ev.y) > COURT.base ? t('太长了 —— 平击力量过大？试试上旋') : t('偏出边线'), '#ff7b6b');
+            }
+        } else if (!inside) {
+            endPoint(game.mode === 'machine' ? null : -by, game.mode === 'machine' ? t('来球出界（不用接）') : nameOf(h) + t(' 出界'), '', '#8fe38f');
+        }
+    } else {
+        // Second bounce: the receiving side failed to return it
+        const rx = firstHumanOn(-by);
+        if (rx) {
+            rx.stats.whiffs++;
+            endPoint(by, (hHuman ? pre(h) + t('制胜分！') : pre(rx) + t('没接到')), hHuman ? '' : t('脚步：提前移动到球的落点后方'), hHuman ? '#8fe38f' : '#ff7b6b');
+        } else endPoint(by, pre(h) + t('制胜分！'), nameOf(game.ents.find(e => e.side === -by)) + t(' 没够到'), '#8fe38f');
+    }
+}
+
+// ---------- Human hitting (works in the entity's local frame) ----------
+function startCharge(e, type) {
+    if (!e || e.charge) return;
+    e.charge = { type, t0: game.t };
+}
+
+function releaseCharge(e, type) {
+    if (!e || !e.charge || (type && e.charge.type !== type)) return;
+    const swing = { type: e.charge.type, power: chargePower(e), tR: game.t };
+    e.charge = null;
+    e.swingT = game.t;
+    e.swingSide = game.ball && game.ball.x * e.side >= e.x * e.side ? 1 : -1;
+    if (e.cross && e.cross.reachable && game.t - e.cross.t <= P.window / 1000) {
+        doHit(e, game.t - e.cross.t, swing, e.cross);
+        return;
+    }
+    e.pendingSwing = swing;
+}
+
+function contactInfo(e) {
+    const b = game.ball, s = e.side;
+    const lbx = b.x * s, lpx = e.x * s;
+    const side = lbx >= lpx ? 1 : -1;
+    const off = lbx - (lpx + side * CONTACT_SIDE);
+    const reachable = Math.abs(off) <= P.reach && b.z <= 2.3 && (!game.shot.firstBounce || game.shot.firstBounce.in || game.mode === 'machine');
+    return { t: game.t, side, off, reachable };
+}
+
+// err < 0 => early (released before the ball arrived), err > 0 => late
+function doHit(e, err, swing, info) {
+    const b = game.ball, s = e.side;
+    const W = P.window / 1000;
+    const en = clamp(err / W, -1, 1);
+    const perfect = Math.abs(err) * 1000 <= P.perfect;
+    const moveRatio = clamp(Math.hypot(e.vx, e.vy) / P.moveSpeed, 0, 1.6);
+    const offN = clamp(Math.abs(info.off) / P.reach, 0, 1);
+
+    const timeQ = perfect ? 1.05 : 1 - 0.22 * Math.abs(en);
+    const footQ = 1 - 0.18 * moveRatio;
+    const spaceQ = 1 - 0.25 * offN * offN;
+    const hSpeed = (16 + 20 * swing.power) * timeQ * footQ * spaceQ;
+
+    // Direction comes from timing: early pulls the ball across the body, late pushes it the other way.
+    const lbx = b.x * s, lby = b.y * s;
+    let aimX = info.side * en * (isDoubles() ? 4.6 : 3.8);
+    const sigma = 0.25 + 0.9 * moveRatio + 0.7 * offN;
+    aimX += gauss() * sigma;
+    const aimY = -9.0 + gauss() * 0.4;
+    const dx = aimX - lbx, dy = aimY - lby, dl = Math.hypot(dx, dy);
+
+    const top = swing.type === 'top';
+    let vz = top ? 6.6 - 0.3 * swing.power : 3.3;
+    vz += (0.9 - b.z) * 1.0 + gauss() * sigma * 0.35;
+
+    b.vx = s * dx / dl * hSpeed; b.vy = s * dy / dl * hSpeed; b.vz = vz;
+    b.spin = top ? 1 : 0.1;
+    b.netChecked = false; b.rolling = false;
+    if (b.z < 0.15) b.z = 0.15;
+
+    game.shot = { by: s, hitter: e, firstBounce: null, resolved: false, predBounce: null };
+    clearSwings();
+    e.lastErr = err;
+    e.swingSide = info.side;
+
+    const kmh = Math.hypot(b.vx, b.vy, b.vz) * 3.6;
+    const st = e.stats;
+    st.hits++; st.speedSum += kmh; st.maxSpeed = Math.max(st.maxSpeed, kmh);
+    if (perfect) st.perfect++;
+    if (game.mode !== 'machine') game.score.rally++;
+
+    const ms = Math.round(err * 1000);
+    const timingTxt = pre(e) + (perfect ? t('完美！') : (ms < 0 ? t('早 ') + (-ms) + 'ms' : t('晚 ') + ms + 'ms'));
+    const fromRight = lbx > 0;
+    const dir = Math.abs(aimX) < 1.2 ? t('中路') : t((aimX < 0) === fromRight ? '斜线' : '直线');
+    const notes = [t(top ? '上旋' : '平击') + ' ' + Math.round(kmh) + ' km/h · ' + dir, t(info.side > 0 ? '正手' : '反手')];
+    if (moveRatio < 0.12) notes.push(t('站稳 ✓')); else notes.push(t('移动中击球 -') + Math.round(100 * (1 - footQ)) + t('% 力量'));
+    if (offN > 0.65) notes.push(t(info.off * info.side > 0 ? '够得太远' : '离球太近（挤）'));
+    say(timingTxt, notes.join(' · '), perfect ? '#7dffa0' : '#ffe066');
+    buzz(perfect ? [18, 40, 18] : 12);
+}
+// Short vibration on hit (Android Chrome; iOS Safari has no web vibration API, so it is silently skipped)
+function buzz(pattern) { if (TOUCH_UI && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (err) { /* ignore */ } } }
+
+function whiff(e, main, sub) {
+    e.stats.whiffs++;
+    say(pre(e) + t(main), t(sub), '#ff7b6b');
+}
+
+// Every physics step: did the incoming ball reach this human's contact plane?
+function checkHumanContact(e) {
+    const b = game.ball, shot = game.shot, s = e.side;
+    if (!b || !shot || shot.resolved || shot.by === s || b.rolling) { e.prevRel = null; return; }
+    const rel = b.y * s - (e.y * s - CONTACT_AHEAD);
+    if (e.prevRel !== null && e.prevRel < 0 && rel >= 0 && b.vy * s > 0 && !e.cross) {
+        const info = contactInfo(e);
+        if (OPT.bot && info.reachable) {
+            doHit(e, gauss() * 0.02, { type: Math.random() < 0.65 ? 'top' : 'flat', power: rand(0.35, 0.9) }, info);
+            return;
+        }
+        const sw = e.pendingSwing;
+        // a teammate who can't reach it shouldn't be told off in doubles
+        const quiet = !info.reachable && game.ents.some(o => o !== e && o.side === s);
+        if (sw) {
+            const early = game.t - sw.tR;
+            if (!info.reachable) { e.pendingSwing = null; if (!quiet) whiff(e, '没够到', '脚步：往球的侧后方站，留出正手/反手空间'); }
+            else if (early <= P.window / 1000) { doHit(e, -early, sw, info); return; }
+            else { e.pendingSwing = null; e.lastErr = -P.window / 1000; whiff(e, '挥拍太早', '等球到身前的击球线再松开'); }
+        } else {
+            e.cross = info;
+            if (!info.reachable && !quiet) whiff(e, '没够到', '脚步：往球的侧后方站，留出正手/反手空间');
+        }
+    }
+    e.prevRel = rel;
+}
+
+function expireTimers(e) {
+    const W = P.window / 1000;
+    if (e.pendingSwing && game.t - e.pendingSwing.tR > W) {
+        const incoming = !e.cross && game.ball && game.shot && game.shot.by !== e.side && !game.shot.resolved;
+        if (incoming && game.ball.y * e.side > e.y * e.side - 6) { e.lastErr = -W; whiff(e, '挥拍太早', '等球到身前的击球线再松开'); }
+        e.pendingSwing = null;
+    }
+    if (e.cross && e.cross.reachable && game.t - e.cross.t > W) {
+        e.cross = null;
+        e.lastErr = W;
+        whiff(e, '太晚了', '球已经过了击球点');
+    }
+}
+
+// ---------- AI (and auto-demo for humans) ----------
+// Where will the incoming ball be hittable on side s (after its bounce)?
+function predictContact(b, s) {
+    const c = cloneBall(b);
+    let bounced = false;
+    for (let i = 0; i < 240 * 4; i++) {
+        const ev = [];
+        stepBall(c, PHYS_DT, ev);
+        if (ev.some(e => e.type === 'net')) return null;
+        if (ev.some(e => e.type === 'bounce')) { if (bounced) return { x: c.x, y: c.y }; bounced = true; }
+        if (bounced && ((c.vz < 0 && c.z < 1.1) || c.y * s > 13.8)) return { x: c.x, y: c.y };
+    }
+    return null;
+}
+// In doubles each player covers a lane; the player whose lane the ball is heading to chases it.
+function isChaser(e, pt) {
+    const team = game.ents.filter(o => o.side === e.side);
+    if (team.length < 2) return true;
+    return Math.sign(pt.x || 1e-6) === e.lane;
+}
+function incomingPred(e) {
+    const b = game.ball, shot = game.shot;
+    if (!b || !shot || shot.resolved || shot.by === e.side) return null;
+    if (!shot.pred) shot.pred = predictContact(b, e.side) || { none: true };
+    return shot.pred.none ? null : shot.pred;
+}
+
+function aiThink(e, dt) {
+    const b = game.ball, shot = game.shot, s = e.side, rx = -0.6 * s;
+    let t = home(e);
+    const pred = incomingPred(e);
+    if (pred && isChaser(e, pred)) t = { x: pred.x - rx, y: pred.y + 0.3 * s };
+    const dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy);
+    const sp = Math.min(P.aiSpeed, d * 6);
+    e.vx = d > 0.01 ? dx / d * sp : 0; e.vy = d > 0.01 ? dy / d * sp : 0;
+    e.x += e.vx * dt; e.y += e.vy * dt;
+
+    // AI hits when the ball (after bouncing in) is near its racket
+    if (b && shot && shot.by !== s && !shot.resolved && shot.firstBounce && shot.firstBounce.in
+        && b.vy * s > 0 && b.z < 2.2 && Math.hypot(b.x - (e.x + rx), b.y - e.y) < 1.0) {
+        aiHit(e);
+    }
+}
+
+function aiHit(e) {
+    const b = game.ball, o = -e.side, HW = halfWidth();
+    const from = { x: b.x, y: b.y, z: Math.max(0.4, b.z) };
+    let lx = rand(-(HW - 0.8), HW - 0.8), ly = rand(5, 10.2);
+    if (Math.random() < P.aiErr) {
+        if (Math.random() < 0.5) ly = rand(12.4, 13.5); else { lx = (Math.random() < 0.5 ? -1 : 1) * rand(HW + 0.3, HW + 1.1); ly = rand(6, 10); }
+    }
+    newBallFrom(launchToward(from, { x: lx, y: o * ly }, P.feedSpeed * rand(0.9, 1.15), P.feedSpin * rand(0.7, 1.3)), e.side, e);
+    e.swingT = game.t; e.swingSide = 1;
+    if (game.mode !== 'machine') game.score.rally++;
+}
+
+// ---------- Human movement ----------
+// Keys are screen-relative for both players (← = screen left, ↑ = up the screen).
+const KEYMAP = {
+    p1: { l: ['KeyA'], r: ['KeyD'], u: ['KeyW'], d: ['KeyS'], sprint: ['ShiftLeft'], top: ['KeyJ', 'Space', 'KeyF'], flat: ['KeyK', 'KeyG'] },
+    p1solo: { l: ['KeyA', 'ArrowLeft'], r: ['KeyD', 'ArrowRight'], u: ['KeyW', 'ArrowUp'], d: ['KeyS', 'ArrowDown'], sprint: ['ShiftLeft', 'ShiftRight'] },
+    p2: { l: ['ArrowLeft'], r: ['ArrowRight'], u: ['ArrowUp'], d: ['ArrowDown'], sprint: ['ShiftRight'], top: ['Period', 'Numpad1'], flat: ['Slash', 'Numpad2'] },
+};
+const keyMapFor = e => e.ctrl === 'p1' && !twoHumans() ? Object.assign({}, KEYMAP.p1, KEYMAP.p1solo) : KEYMAP[e.ctrl];
+
+function moveHuman(e, dt) {
+    const k = game.keys, m = keyMapFor(e), any = list => list.some(c => k.has(c));
+    let ix = 0, iy = 0;
+    if (any(m.l)) ix -= 1;
+    if (any(m.r)) ix += 1;
+    if (any(m.u)) iy -= 1;
+    if (any(m.d)) iy += 1;
+    let sprint = any(m.sprint);
+    if (ix || iy) { const l = Math.hypot(ix, iy); ix /= l; iy /= l; }
+    else if (e.ctrl === 'p1' && (game.touchMove.x || game.touchMove.y)) { ix = game.touchMove.x; iy = game.touchMove.y; sprint = game.touchMove.sprint; }
+
+    // Auto footwork (mobile default): P1 runs to the ball unless the joystick or keys are being used
+    const autoP1 = OPT.autoMove && e.ctrl === 'p1' && !ix && !iy;
+    if (OPT.bot || autoP1) {
+        const t = botTarget(e);
+        const dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy);
+        ix = iy = 0;
+        if (d > 0.08) { ix = dx / d * Math.min(1, d); iy = dy / d * Math.min(1, d); }
+        sprint = OPT.bot || Math.hypot(t.x - e.x, t.y - e.y) > 2.5;
+    }
+
+    const maxV = P.moveSpeed * (sprint ? P.sprint : 1) * (e.charge ? P.chargeMoveMul : 1);
+    const a = P.accel * dt;
+    e.vx += clamp(ix * maxV - e.vx, -a, a); e.vy += clamp(iy * maxV - e.vy, -a, a);
+    e.x = clamp(e.x + e.vx * dt, -7, 7);
+    const ly = clamp((e.y + e.vy * dt) * e.side, 1.5, 15);
+    e.y = ly * e.side;
+}
+
+function botTarget(e) {
+    const pred = incomingPred(e);
+    if (!pred || !isChaser(e, pred)) return home(e);
+    const s = e.side, lx = pred.x * s, ly = pred.y * s;
+    const side = lx >= 0 ? 1 : -1;
+    return { x: (lx - side * CONTACT_SIDE) * s, y: (ly + CONTACT_AHEAD) * s };
+}
+
+// ---------- Main update ----------
+function update(dtReal) {
+    if (game.paused) return;
+    const scale = OPT.slow ? 0.5 : 1;
+    let remaining = Math.min(dtReal, 0.05) * scale;
+    while (remaining > 1e-6) {
+        const dt = Math.min(PHYS_DT, remaining);
+        remaining -= dt;
+        game.t += dt;
+        for (const e of game.ents) isHuman(e) ? moveHuman(e, dt) : aiThink(e, dt);
+        if (game.ball) {
+            const events = [];
+            stepBall(game.ball, dt, events);
+            events.forEach(onBallEvent);
+            for (const e of game.ents) if (isHuman(e)) checkHumanContact(e);
+            const b = game.ball;
+            if (game.shot && !game.shot.resolved && (Math.abs(b.y) > 22 || Math.abs(b.x) > 12)) {
+                const rx = firstHumanOn(-game.shot.by);
+                if (rx) rx.stats.whiffs++;
+                endPoint(game.shot.by, rx ? pre(rx) + t('没接到') : t('制胜分！'), '', rx ? '#ff7b6b' : '#8fe38f');
+            }
+            if (game.shot && !game.shot.resolved && b.rolling) endPoint(game.shot.by, '', '');
+        }
+        game.ents.forEach(e => { if (isHuman(e)) expireTimers(e); });
+        if (game.shot === null || game.shot.resolved) {
+            if (game.t >= game.nextFeedAt) feedBall();
+        }
+    }
+    game.marks = game.marks.filter(m => game.t - m.t < 2.5);
+    if (msgTimer > 0) { msgTimer -= dtReal; if (msgTimer <= 0) $('msg').style.opacity = 0; }
+}
+
+// ---------- Rendering (simple perspective camera behind the player) ----------
+const canvas = $('c'), ctx = canvas.getContext('2d');
+const CAM = { y: 24, h: 9, f: 600, hor: 100, cx: 0 };
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const H = innerHeight, Wd = innerWidth;
+    // fit: near edge (y = 15, depth 9) at bottom, far baseline region near the top
+    const fH = (H - 90) / (CAM.h / 9 - CAM.h / 37);
+    const fW = (Wd / 2 - 10) / (6.5 / 12);
+    CAM.f = Math.min(fH, fW);
+    CAM.hor = H - 30 - CAM.f * CAM.h / 9;
+    CAM.cx = Wd / 2;
+}
+addEventListener('resize', resize);
+resize();
+
+function proj(x, y, z) {
+    const d = Math.max(0.5, CAM.y - y);
+    return { x: CAM.cx + CAM.f * x / d, y: CAM.hor + CAM.f * (CAM.h - z) / d, s: CAM.f / d };
+}
+function line3(a, b) { const p = proj(...a), q = proj(...b); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); }
+function poly3(pts, fill) { ctx.beginPath(); pts.forEach((p, i) => { const q = proj(...p); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); }
+
+// ---------- Visual layer (art pass v0.3). Pure drawing: reads game state, never changes gameplay ----------
+const FX = { trail: [], trailBall: null, sparks: [], lastSwing: {}, crowd: null, crowdKey: '' };
+
+function buildCrowd() {
+    // seats + spectators along the far stand, cached per window size
+    const key = innerWidth + 'x' + innerHeight;
+    if (FX.crowdKey === key) return;
+    FX.crowdKey = key;
+    const c = document.createElement('canvas'), dpr = window.devicePixelRatio || 1;
+    const top = 0, bot = proj(0, -15.5, 1.3).y;
+    c.width = innerWidth * dpr; c.height = Math.max(1, bot * dpr);
+    const g = c.getContext('2d'); g.scale(dpr, dpr);
+    const sg = g.createLinearGradient(0, top, 0, bot);
+    sg.addColorStop(0, '#0b1424'); sg.addColorStop(1, '#1b2b44');
+    g.fillStyle = sg; g.fillRect(0, 0, innerWidth, bot);
+    const rows = 9, cols = Math.ceil(innerWidth / 9);
+    const shirts = ['#e76f51', '#f4a261', '#e9c46a', '#2a9d8f', '#8ecae6', '#ffffff', '#c77dff', '#ef476f', '#06d6a0'];
+    for (let r = 0; r < rows; r++) {
+        const y = bot - 8 - r * (bot - 10) / rows;
+        for (let k = 0; k < cols; k++) {
+            if (Math.random() < 0.18) continue;
+            const x = k * 9 + (r % 2) * 4.5 + rand(-1, 1);
+            const sz = 2.2 + (rows - r) * 0.08;
+            g.globalAlpha = 0.45 + 0.4 * (1 - r / rows);
+            g.fillStyle = shirts[(Math.random() * shirts.length) | 0];
+            g.fillRect(x - sz, y - sz * 0.6, sz * 2, sz * 1.8);
+            g.fillStyle = ['#f2c9a0', '#c68642', '#8d5524', '#e0ac69'][(Math.random() * 4) | 0];
+            g.beginPath(); g.arc(x, y - sz * 1.3, sz * 0.8, 0, Math.PI * 2); g.fill();
+        }
+    }
+    g.globalAlpha = 1;
+    FX.crowd = c;
+}
+
+function drawCourt() {
+    const Wd = innerWidth, H = innerHeight;
+    // night sky + stadium lights
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#0a1222'); sky.addColorStop(0.5, '#14243c'); sky.addColorStop(1, '#0d1a2b');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, Wd, H);
+    buildCrowd();
+    if (FX.crowd) ctx.drawImage(FX.crowd, 0, 0, Wd, FX.crowd.height / (window.devicePixelRatio || 1));
+    for (const lx of [0.12, 0.88]) {
+        const gl = ctx.createRadialGradient(Wd * lx, 10, 0, Wd * lx, 10, Wd * 0.35);
+        gl.addColorStop(0, 'rgba(255,250,220,.35)'); gl.addColorStop(1, 'rgba(255,250,220,0)');
+        ctx.fillStyle = gl; ctx.fillRect(0, 0, Wd, H);
+    }
+    // back wall with banner
+    poly3([[-60, -15.5, 0], [60, -15.5, 0], [60, -15.5, 1.3], [-60, -15.5, 1.3]], '#123a2b');
+    const a = proj(-60, -15.5, 1.3), b = proj(60, -15.5, 0), m = proj(0, -15.5, 0.62);
+    ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fillRect(a.x, a.y + 2, b.x - a.x, 2);
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '800 ' + Math.max(10, 0.6 * m.s) + 'px system-ui, sans-serif';
+    ctx.fillText(t('ACE  ·  网球手感原型  ·  RALLY'), m.x, m.y);
+    ctx.textBaseline = 'alphabetic';
+    // surround (green hard court) with depth shading
+    poly3([[-60, -15.5, 0], [60, -15.5, 0], [60, 23, 0], [-60, 23, 0]], '#2e7d5b');
+    const W = COURT.dblHalfW, B = COURT.base, S = COURT.halfW, SV = COURT.service;
+    // court (blue hard court) with a light falloff toward the far end
+    const far = proj(0, -B, 0), near = proj(0, B, 0);
+    const cg = ctx.createLinearGradient(0, far.y, 0, near.y);
+    cg.addColorStop(0, '#2c5d9c'); cg.addColorStop(1, '#3b78c2');
+    poly3([[-W, -B, 0], [W, -B, 0], [W, B, 0], [-W, B, 0]], cg);
+    // subtle wear in front of each baseline
+    for (const yy of [-B + 0.9, B - 0.9]) {
+        const p = proj(0, yy, 0);
+        const wg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 2.2 * p.s);
+        wg.addColorStop(0, 'rgba(255,255,255,.07)'); wg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = wg; ctx.beginPath(); ctx.ellipse(p.x, p.y, 2.2 * p.s, 0.7 * p.s, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // lines: soft glow pass then crisp pass, width scales with depth
+    const lines = [
+        [[-W, -B], [W, -B]], [[-W, B], [W, B]], [[-W, -B], [-W, B]], [[W, -B], [W, B]],
+        [[-S, -B], [-S, B]], [[S, -B], [S, B]], [[-S, -SV], [S, -SV]], [[-S, SV], [S, SV]],
+        [[0, -SV], [0, SV]], [[0, -B], [0, -B + 0.3]], [[0, B], [0, B - 0.3]],
+    ];
+    ctx.lineCap = 'round';
+    for (const pass of [0, 1]) {
+        for (const [u, v] of lines) {
+            const p = proj(u[0], u[1], 0), q = proj(v[0], v[1], 0);
+            const w = 0.05 * (p.s + q.s) / 2;
+            ctx.strokeStyle = pass ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.18)';
+            ctx.lineWidth = pass ? Math.max(1.2, w) : Math.max(4, w * 3.5);
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+        }
+    }
+}
+
+function drawNet() {
+    const W = COURT.dblHalfW + 0.9, top = x => COURT.netH + (COURT.netPostH - COURT.netH) * Math.abs(x) / W;
+    poly3([[-W, 0, 0], [W, 0, 0], [W, 0, COURT.netPostH], [0, 0, COURT.netH], [-W, 0, COURT.netPostH]], 'rgba(10,14,20,.35)');
+    // mesh
+    ctx.strokeStyle = 'rgba(230,235,240,.22)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = -W; x <= W + 1e-6; x += 0.25) line3([x, 0, 0], [x, 0, top(x)]);
+    for (let z = 0.12; z < COURT.netPostH; z += 0.12) {
+        // horizontal strands clipped under the sagging tape
+        const xm = z <= COURT.netH ? W : W * (COURT.netPostH - z) / (COURT.netPostH - COURT.netH);
+        if (z > COURT.netH) { line3([-W, 0, z], [-W + (W - xm), 0, z]); line3([W - (W - xm), 0, z], [W, 0, z]); }
+        else line3([-W, 0, z], [W, 0, z]);
+    }
+    ctx.stroke();
+    // tape + centre strap + posts
+    const p0 = proj(0, 0, COURT.netH);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(3, 0.07 * p0.s); ctx.beginPath();
+    line3([-W, 0, COURT.netPostH], [0, 0, COURT.netH]); line3([0, 0, COURT.netH], [W, 0, COURT.netPostH]); ctx.stroke();
+    ctx.lineWidth = Math.max(2, 0.05 * p0.s); ctx.beginPath(); line3([0, 0, 0], [0, 0, COURT.netH]); ctx.stroke();
+    for (const sx of [-W, W]) {
+        const a = proj(sx, 0, 0), b = proj(sx, 0, COURT.netPostH + 0.05);
+        ctx.strokeStyle = '#1b1f27'; ctx.lineWidth = Math.max(4, 0.1 * a.s);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.fillStyle = '#d9dee6'; ctx.beginPath(); ctx.arc(b.x, b.y, Math.max(2.5, 0.06 * a.s), 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawShadow(x, y, r, alpha) {
+    const p = proj(x, y, 0);
+    const rx = r * p.s, ry = r * p.s * 0.35;
+    if (rx < 0.5) return;
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, 'rgba(0,0,0,' + (alpha || 0.45) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+function limb(a, b, w, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+}
+
+function drawPerson(o, kit, facing) {
+    // kit: { shirt, shorts, cap }. facing: -1 = toward -y (player, seen from behind), +1 = toward +y (AI, seen from the front)
+    const dt = Math.max(0, Math.min(0.1, game.t - (o._lt || game.t))); o._lt = game.t;
+    const spd = Math.hypot(o.vx || 0, o.vy || 0);
+    o._ph = (o._ph || 0) + spd * dt * 3.2;
+    const stride = Math.min(1, spd / 4) * Math.sin(o._ph), bob = Math.abs(Math.sin(o._ph)) * Math.min(1, spd / 4) * 0.04;
+    drawShadow(o.x, o.y, 0.55, 0.5);
+    const P3 = (dx, dz, dy) => proj(o.x + dx, o.y + (dy || 0), dz + bob);
+    const s = proj(o.x, o.y, 0).s;
+    const skin = '#f0c39b';
+    // legs (alternate stride when moving)
+    const hipL = P3(-0.11, 0.92), hipR = P3(0.11, 0.92);
+    const footL = proj(o.x - 0.14, o.y + stride * 0.28, Math.max(0, -stride) * 0.12);
+    const footR = proj(o.x + 0.14, o.y - stride * 0.28, Math.max(0, stride) * 0.12);
+    const kneeL = proj(o.x - 0.13, o.y + stride * 0.12, 0.5 + bob), kneeR = proj(o.x + 0.13, o.y - stride * 0.12, 0.5 + bob);
+    for (const [h, k, f] of [[hipL, kneeL, footL], [hipR, kneeR, footR]]) {
+        limb(h, k, 0.12 * s, skin); limb(k, f, 0.1 * s, skin);
+        ctx.fillStyle = '#fafafa'; ctx.beginPath(); ctx.ellipse(f.x, f.y - 0.03 * s, 0.09 * s, 0.05 * s, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // shorts + torso
+    const wl = P3(-0.2, 0.98), wr = P3(0.2, 0.98), shl = P3(-0.24, 1.42), shr = P3(0.24, 1.42), sk = P3(-0.18, 0.78), sk2 = P3(0.18, 0.78);
+    ctx.fillStyle = kit.shorts; ctx.beginPath();
+    ctx.moveTo(wl.x, wl.y); ctx.lineTo(wr.x, wr.y); ctx.lineTo(sk2.x, sk2.y); ctx.lineTo(sk.x, sk.y); ctx.closePath(); ctx.fill();
+    const tg = ctx.createLinearGradient(shl.x, 0, shr.x, 0);
+    tg.addColorStop(0, kit.shirt); tg.addColorStop(0.55, kit.shirtLight); tg.addColorStop(1, kit.shirt);
+    ctx.fillStyle = tg; ctx.beginPath();
+    ctx.moveTo(shl.x, shl.y); ctx.lineTo(shr.x, shr.y); ctx.lineTo(wr.x + 0.02 * s, wr.y); ctx.lineTo(wl.x - 0.02 * s, wl.y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    const st = P3(-0.22, 1.2), st2 = P3(0.22, 1.12);
+    ctx.fillRect(st.x, st.y, st2.x - st.x, Math.max(1, 0.03 * s));
+    // racket arm + racket (swing ~0.25 s after release)
+    const ph = clamp((game.t - o.swingT) / 0.25, 0, 1);
+    const side = o.swingSide || 1;
+    let rx, ry, rz;
+    if (ph > 0 && ph < 1) {
+        const a = ph * Math.PI;
+        rx = o.x + side * Math.cos(a) * 0.9;
+        ry = o.y + facing * Math.sin(a) * 0.7 + (-facing) * 0.1;
+        rz = 0.6 + ph * 1.0;
+        // swing arc trail
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.35 * (1 - ph)) + ')'; ctx.lineWidth = Math.max(2, 0.12 * s); ctx.beginPath();
+        for (let k = 0; k <= 10; k++) {
+            const pk = ph * k / 10, ak = pk * Math.PI;
+            const q = proj(o.x + side * Math.cos(ak) * 0.9, o.y + facing * Math.sin(ak) * 0.7 - facing * 0.1, 0.6 + pk + bob);
+            k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+        }
+        ctx.stroke();
+    } else {
+        rx = o.x + side * 0.7; ry = o.y + facing * 0.1; rz = 1.05;
+    }
+    const shoulder = side > 0 ? shr : shl, other = side > 0 ? shl : shr;
+    const tip = proj(rx, ry, rz + bob);
+    const hand = { x: shoulder.x + (tip.x - shoulder.x) * 0.55, y: shoulder.y + (tip.y - shoulder.y) * 0.55 };
+    limb(shoulder, hand, 0.09 * s, skin);
+    const offHand = P3(-side * 0.32, 1.05, -facing * 0.15);
+    limb(other, offHand, 0.08 * s, skin);
+    // racket: handle + head with strings
+    limb(hand, tip, Math.max(2, 0.035 * s), '#222');
+    const rs = tip.s, ang = Math.atan2(tip.y - hand.y, tip.x - hand.x) + Math.PI / 2;
+    ctx.save(); ctx.translate(tip.x, tip.y); ctx.rotate(ang);
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.ellipse(0, 0, 0.14 * rs, 0.19 * rs, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.clip();
+    ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 0.6; ctx.beginPath();
+    for (let k = -0.15; k <= 0.15; k += 0.05) { ctx.moveTo(k * rs, -0.2 * rs); ctx.lineTo(k * rs, 0.2 * rs); ctx.moveTo(-0.2 * rs, k * rs); ctx.lineTo(0.2 * rs, k * rs); }
+    ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = kit.racket; ctx.lineWidth = Math.max(2, 0.035 * rs);
+    ctx.beginPath(); ctx.ellipse(0, 0, 0.14 * rs, 0.19 * rs, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // head + cap (front view shows a face hint, back view shows hair)
+    const head = P3(0, 1.62), hr = 0.14 * s;
+    ctx.fillStyle = '#d9a37c'; ctx.fillRect(head.x - 0.05 * s, head.y + hr * 0.6, 0.1 * s, 0.1 * s);
+    ctx.fillStyle = facing < 0 ? '#3b2a20' : skin; ctx.beginPath(); ctx.arc(head.x, head.y, hr, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = kit.cap; ctx.beginPath(); ctx.arc(head.x, head.y - hr * 0.15, hr * 1.02, Math.PI, 0); ctx.fill();
+    if (facing > 0) {
+        ctx.fillRect(head.x - hr * 1.2, head.y - hr * 0.2, hr * 2.4, hr * 0.28);
+        ctx.fillStyle = '#2b2b2b';
+        ctx.beginPath(); ctx.arc(head.x - hr * 0.35, head.y + hr * 0.2, Math.max(0.8, hr * 0.1), 0, Math.PI * 2);
+        ctx.arc(head.x + hr * 0.35, head.y + hr * 0.2, Math.max(0.8, hr * 0.1), 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawPlayerExtras(pl) {
+    if (OPT.zone) {
+        const y = pl.y - pl.side * CONTACT_AHEAD;
+        const a = proj(pl.x - CONTACT_SIDE - P.reach, y, 0.02), b = proj(pl.x + CONTACT_SIDE + P.reach, y, 0.02);
+        const g = ctx.createLinearGradient(a.x, 0, b.x, 0);
+        g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        for (const sd of [-1, 1]) {
+            const p = proj(pl.x + sd * CONTACT_SIDE, y, 0.02);
+            const pulse = 0.6 + 0.4 * Math.sin(game.t * 6);
+            ctx.fillStyle = 'rgba(255,224,102,' + (0.25 * pulse) + ')';
+            ctx.beginPath(); ctx.ellipse(p.x, p.y, 0.22 * p.s, 0.08 * p.s, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,230,100,.95)'; ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    if (pl.charge) {
+        const p = proj(pl.x, pl.y, 0), pw = chargePower(pl);
+        const col = pl.charge.type === 'top' ? '255,190,50' : '90,190,255';
+        const r = (0.5 + pw * 0.5) * p.s;
+        ctx.fillStyle = 'rgba(' + col + ',' + (0.12 + 0.18 * pw) + ')';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, r, r * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(' + col + ',.95)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, r, r * 0.35, 0, -Math.PI / 2, -Math.PI / 2 + pw * Math.PI * 2); ctx.stroke();
+    }
+}
+
+function drawMarks() {
+    for (const m of game.marks) {
+        const age = (game.t - m.t) / 2.5, a = Math.max(0, 1 - age), p = proj(m.x, m.y, 0.01);
+        const col = m.in ? '120,255,160' : '255,90,80';
+        const grow = 1 + age * 0.8;
+        ctx.fillStyle = 'rgba(' + col + ',' + (0.18 * a) + ')';
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, 0.3 * p.s * grow, 0.1 * p.s * grow, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(' + col + ',' + a + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, 0.3 * p.s * grow, 0.1 * p.s * grow, 0, 0, Math.PI * 2); ctx.stroke();
+        if (age < 0.6) {
+            ctx.fillStyle = 'rgba(' + col + ',' + a + ')'; ctx.font = '700 13px system-ui, sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(m.in ? 'IN' : 'OUT', p.x, p.y - 0.3 * p.s - 6 * age * 10);
+        }
+    }
+    const shot = game.shot;
+    if (OPT.predict && shot && firstHumanOn(-shot.by) && !shot.resolved && !shot.firstBounce && shot.predBounce) {
+        const p = proj(shot.predBounce.x, shot.predBounce.y, 0.01);
+        const r = 0.35 + 0.08 * Math.sin(game.t * 10);
+        ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.setLineDash([5, 4]); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, r * p.s, r * 0.34 * p.s, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function updateFx() {
+    const b = game.ball;
+    if (b !== FX.trailBall) { FX.trail = []; FX.trailBall = b; }
+    if (b) {
+        const last = FX.trail[FX.trail.length - 1];
+        if (!last || last.t !== game.t) FX.trail.push({ x: b.x, y: b.y, z: b.z, t: game.t });
+        while (FX.trail.length && game.t - FX.trail[0].t > 0.12) FX.trail.shift();
+    }
+    // hit sparks when someone starts a swing and the ball is near them
+    for (const o of game.ents) {
+        const who = o.id;
+        if (o.swingT !== FX.lastSwing[who]) {
+            FX.lastSwing[who] = o.swingT;
+            if (b && Math.hypot(b.x - o.x, b.y - o.y) < 2.6) {
+                for (let k = 0; k < 14; k++) {
+                    const a = Math.random() * Math.PI * 2, v = rand(1.5, 4);
+                    FX.sparks.push({ x: b.x, y: b.y, z: b.z, vx: Math.cos(a) * v, vy: rand(-2, 2), vz: Math.sin(a) * v, t0: game.t });
+                }
+            }
+        }
+    }
+    const dt = Math.max(0, Math.min(0.05, game.t - (FX.lt || game.t))); FX.lt = game.t;
+    FX.sparks = FX.sparks.filter(s => game.t - s.t0 < 0.35);
+    for (const s of FX.sparks) { s.x += s.vx * dt; s.y += s.vy * dt; s.z += s.vz * dt; s.vz -= 6 * dt; }
+}
+
+function drawBall() {
+    const b = game.ball; if (!b) return;
+    drawShadow(b.x, b.y, 0.14 + Math.min(0.15, b.z * 0.04), Math.max(0.15, 0.55 - b.z * 0.12));
+    // motion trail
+    for (let k = 0; k < FX.trail.length - 1; k++) {
+        const t = FX.trail[k], q = proj(t.x, t.y, t.z), f = (k + 1) / FX.trail.length;
+        ctx.fillStyle = 'rgba(230,255,90,' + (0.35 * f) + ')';
+        ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(2, 0.1 * q.s * f), 0, Math.PI * 2); ctx.fill();
+    }
+    const p = proj(b.x, b.y, b.z), r = Math.max(3.5, 0.11 * p.s);
+    const g = ctx.createRadialGradient(p.x - r * 0.35, p.y - r * 0.35, r * 0.1, p.x, p.y, r);
+    g.addColorStop(0, '#fbffc4'); g.addColorStop(0.45, '#dcf53b'); g.addColorStop(1, '#8fae12');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+    if (r > 5) {
+        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = Math.max(1, r * 0.12);
+        const rot = game.t * 18;
+        ctx.beginPath(); ctx.arc(p.x + Math.cos(rot) * r * 0.9, p.y + Math.sin(rot) * r * 0.9, r * 0.75, rot + 2.3, rot + 4.0); ctx.stroke();
+    }
+}
+
+function drawSparks() {
+    for (const s of FX.sparks) {
+        const a = 1 - (game.t - s.t0) / 0.35, p = proj(s.x, s.y, s.z);
+        ctx.fillStyle = 'rgba(255,240,150,' + a + ')';
+        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(1.2, 0.03 * p.s), 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawFeeder() {
+    const base = proj(0, -12.3, 0), s = base.s;
+    drawShadow(0, -12.3, 0.8, 0.5);
+    const top = proj(0, -12.3, 0.85), hop = proj(0, -12.3, 1.35);
+    // body
+    const bg = ctx.createLinearGradient(base.x - 0.45 * s, 0, base.x + 0.45 * s, 0);
+    bg.addColorStop(0, '#37474f'); bg.addColorStop(0.5, '#607d8b'); bg.addColorStop(1, '#37474f');
+    ctx.fillStyle = bg; ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(base.x - 0.45 * s, top.y, 0.9 * s, base.y - top.y - 0.08 * s, 0.08 * s) : ctx.rect(base.x - 0.45 * s, top.y, 0.9 * s, base.y - top.y - 0.08 * s);
+    ctx.fill();
+    // hopper full of balls
+    ctx.fillStyle = 'rgba(200,220,230,.35)';
+    ctx.beginPath(); ctx.moveTo(base.x - 0.5 * s, hop.y); ctx.lineTo(base.x + 0.5 * s, hop.y); ctx.lineTo(base.x + 0.35 * s, top.y); ctx.lineTo(base.x - 0.35 * s, top.y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#d4ec2c';
+    for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.arc(base.x + (k - 3) * 0.12 * s, hop.y + 0.12 * s + (k % 2) * 0.06 * s, 0.06 * s, 0, Math.PI * 2); ctx.fill(); }
+    // nozzle + wheels + status light
+    ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.arc(base.x, top.y + 0.25 * s, 0.13 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111'; for (const sx of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(base.x + sx * s, base.y - 0.06 * s, 0.08 * s, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = game.paused ? '#ff5252' : '#69f0ae'; ctx.beginPath(); ctx.arc(base.x + 0.3 * s, top.y + 0.12 * s, 0.035 * s + 1, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawTag(e) {
+    // name tag over each head when more than one person is on a team or two humans play
+    if (!twoHumans() && !isDoubles()) return;
+    const p = proj(e.x, e.y, 2.05), sz = Math.max(10, Math.min(15, 0.28 * p.s));
+    const txt = nameOf(e);
+    ctx.font = '800 ' + sz + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(txt).width + 10;
+    ctx.fillStyle = isHuman(e) ? e.kit.shirt : 'rgba(0,0,0,.45)';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(p.x - w / 2, p.y - sz * 0.75, w, sz * 1.5, sz * 0.5) : ctx.rect(p.x - w / 2, p.y - sz * 0.75, w, sz * 1.5); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText(txt, p.x, p.y + 1);
+    ctx.textBaseline = 'alphabetic';
+}
+
+function drawVignette() {
+    const Wd = innerWidth, H = innerHeight;
+    const g = ctx.createRadialGradient(Wd / 2, H * 0.6, Math.min(Wd, H) * 0.35, Wd / 2, H * 0.6, Math.max(Wd, H) * 0.8);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.45)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, Wd, H);
+}
+
+function render() {
+    updateFx();
+    drawCourt();
+    drawMarks();
+    const items = [];
+    if (game.mode === 'machine') items.push({ y: -12.3, draw: drawFeeder });
+    for (const e of game.ents) items.push({ y: e.y, draw: () => { if (isHuman(e)) drawPlayerExtras(e); drawPerson(e, e.kit, e.side > 0 ? -1 : 1); drawTag(e); } });
+    if (game.ball) items.push({ y: game.ball.y, draw: drawBall });
+    items.push({ y: 0, draw: drawNet, isNet: true });
+    items.sort((a, b) => (a.y - b.y) || (a.isNet ? -1 : 1));
+    items.forEach(i => i.draw());
+    drawSparks();
+    drawVignette();
+}
+
+// ---------- Input ----------
+const entByCtrl = c => game.ents.find(e => e.ctrl === c);
+function hitKeys(code, fn) {
+    for (const c of ['p1', 'p2']) {
+        const e = entByCtrl(c); if (!e) continue;
+        const m = KEYMAP[c];
+        if (m.top.includes(code)) fn(e, 'top');
+        if (m.flat.includes(code)) fn(e, 'flat');
+    }
+}
+addEventListener('keydown', e => {
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Slash', 'Period', 'Quote'].includes(e.code)) e.preventDefault();
+    if (e.repeat) return;
+    game.keys.add(e.code);
+    if (!game.paused) hitKeys(e.code, startCharge);
+    if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+    if (e.code === 'Enter' && game.paused) setPaused(false);
+    // R resets stats in single-player modes only; in 2-player modes it sits next to P1's keys and wiped the match score
+    if (e.code === 'KeyR' && !twoHumans()) resetStats();
+    if (e.code === 'KeyH') $('help').style.display = $('help').style.display === 'none' ? '' : 'none';
+});
+addEventListener('keyup', e => {
+    game.keys.delete(e.code);
+    hitKeys(e.code, releaseCharge);
+});
+// phone turned upright: the rotate prompt covers the court, so pause instead of letting points play out unseen
+addEventListener('resize', () => { if (TOUCH_UI && innerHeight > innerWidth && game.started && !game.paused) setPaused(true); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { game.keys.clear(); game.ents.forEach(x => x.charge = null); if (game.started) setPaused(true); } });
+addEventListener('blur', () => { game.keys.clear(); game.ents.forEach(x => x.charge = null); if (game.started) setPaused(true); });
+
+// Touch / mobile controls (Pointer Events + pointer capture, so a finger or mouse released anywhere,
+// even off the element or off the screen edge, always ends the charge — fixes the old "stuck charge" bugs).
+//   left 40% of the screen  = virtual joystick (push far = sprint); not touching it = auto footwork
+//   right 60% of the screen = hold to charge, release to hit; a sideways swipe before release = flat, otherwise topspin
+// Add ?touch=1 to the URL to force this UI on a desktop browser for testing.
+const FORCE_TOUCH = /[?&]touch=1/.test(location.search);
+const TOUCH_UI = FORCE_TOUCH || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+if (TOUCH_UI) { document.body.classList.add('touch'); OPT.autoMove = true; }
+if (TOUCH_UI) $('panelTitle').textContent = '⚙ 调参（点开）';
+const STICK_ZONE = 0.4, SWIPE_FLAT = 40;
+let stickId = null, stickO = null, swingId = null, swingO = null;
+const pointerOk = ev => TOUCH_UI && (ev.pointerType !== 'mouse' || FORCE_TOUCH || document.body.classList.contains('touch'));
+function swingTypeFor(ev) {
+    const dx = ev.clientX - swingO.x, dy = ev.clientY - swingO.y;
+    return Math.abs(dx) > SWIPE_FLAT && Math.abs(dx) > Math.abs(dy) ? 'flat' : 'top';
+}
+function showSwingTip(ev, type) {
+    const tip = $('swingTip');
+    tip.style.display = 'block'; tip.style.left = ev.clientX + 'px'; tip.style.top = ev.clientY + 'px';
+    tip.textContent = t(type === 'top' ? '上旋' : '平击');
+    tip.className = type;
+}
+function endStickPointer() {
+    stickId = null; game.touchMove = { x: 0, y: 0, sprint: false };
+    $('stick').style.display = 'none'; $('stickKnob').style.left = '35px'; $('stickKnob').style.top = '35px';
+}
+function endSwingPointer(ev, cancelled) {
+    const p1 = game.player;
+    if (p1 && p1.charge) {
+        if (cancelled) p1.charge = null;              // OS took the touch (gesture / call): drop the charge, don't swing
+        else { p1.charge.type = swingTypeFor(ev); releaseCharge(p1); }
+    }
+    swingId = null; swingO = null; $('swingTip').style.display = 'none';
+}
+canvas.addEventListener('pointerdown', ev => {
+    if (!pointerOk(ev)) return;
+    ev.preventDefault();
+    if (ev.clientX < innerWidth * STICK_ZONE) {
+        if (stickId !== null) return;
+        stickId = ev.pointerId; stickO = { x: ev.clientX, y: ev.clientY };
+        const st = $('stick'); st.style.display = 'block'; st.style.left = (ev.clientX - 55) + 'px'; st.style.top = (ev.clientY - 55) + 'px';
+    } else {
+        if (swingId !== null || game.paused) return;   // a second finger on the swing side is ignored
+        swingId = ev.pointerId; swingO = { x: ev.clientX, y: ev.clientY };
+        startCharge(game.player, 'top');
+        showSwingTip(ev, 'top');
+    }
+    try { canvas.setPointerCapture(ev.pointerId); } catch (err) { /* capture unsupported: window listeners below still end it */ }
+}, { passive: false });
+canvas.addEventListener('pointermove', ev => {
+    if (ev.pointerId === stickId) {
+        let dx = ev.clientX - stickO.x, dy = ev.clientY - stickO.y;
+        const d = Math.hypot(dx, dy), max = 50;
+        game.touchMove = { x: 0, y: 0, sprint: d > max * 1.4 };
+        if (d > max) { dx *= max / d; dy *= max / d; }
+        game.touchMove.x = dx / max; game.touchMove.y = dy / max;
+        $('stickKnob').style.left = (35 + dx) + 'px'; $('stickKnob').style.top = (35 + dy) + 'px';
+    } else if (ev.pointerId === swingId) {
+        const type = swingTypeFor(ev);
+        if (game.player.charge) game.player.charge.type = type;
+        showSwingTip(ev, type);
+    }
+});
+function pointerEnd(ev) {
+    const cancelled = ev.type === 'pointercancel';
+    if (ev.pointerId === stickId) endStickPointer();
+    if (ev.pointerId === swingId) endSwingPointer(ev, cancelled);
+}
+// listen on window too: pointerup always reaches it even if capture was lost
+for (const type of ['pointerup', 'pointercancel']) addEventListener(type, pointerEnd);
+canvas.addEventListener('lostpointercapture', ev => { if (ev.pointerId === swingId || ev.pointerId === stickId) pointerEnd(ev); });
+// stop iOS Safari from scrolling / zooming the page while playing
+document.addEventListener('touchmove', e => { if (e.target === canvas) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault());
+
+// ---------- Panel ----------
+function buildSliders() {
+    const box = $('sliders'); box.innerHTML = '';
+    for (const [key, label, min, max, step, unit] of SLIDERS) {
+        const l = document.createElement('label');
+        const span = document.createElement('span');
+        const inp = document.createElement('input');
+        inp.type = 'range'; inp.min = min; inp.max = max; inp.step = step; inp.value = P[key];
+        const show = () => { span.textContent = t(label) + (LANG === 'en' ? ': ' : '：') + P[key] + (unit ? ' ' + unit : ''); };
+        inp.addEventListener('input', () => { P[key] = parseFloat(inp.value); show(); });
+        show(); l.appendChild(span); l.appendChild(inp); box.appendChild(l);
+    }
+}
+buildSliders();
+$('panelTitle').onclick = () => $('panel').classList.toggle('collapsed');
+function setMode(m, p2Role) {
+    if (p2Role) game.p2Role = p2Role;
+    game.mode = m; game.ball = null; game.shot = null; game.nextFeedAt = game.t + 0.8; game.serveSide = 1; game.serveIdx = 1;
+    buildEnts(m);
+    document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    document.querySelectorAll('[data-p2]').forEach(b => b.classList.toggle('on', b.dataset.p2 === game.p2Role));
+    document.querySelectorAll('.p2row').forEach(r => r.style.display = m === 'doubles' ? '' : 'none');
+    resetStats();
+    updateHelp();
+}
+function updateHelp() {
+    const two = twoHumans();
+    $('help1').style.display = two ? 'none' : '';
+    $('help2').style.display = two ? '' : 'none';
+    $('helpR').style.display = two ? 'none' : '';
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll('[data-p2]').forEach(b => b.onclick = () => setMode('doubles', b.dataset.p2));
+$('optPredict').onchange = e => OPT.predict = e.target.checked;
+$('optZone').onchange = e => OPT.zone = e.target.checked;
+$('optSlow').onchange = e => OPT.slow = e.target.checked;
+$('optBot').onchange = e => OPT.bot = e.target.checked;
+$('optAuto').checked = OPT.autoMove;
+$('optAuto').onchange = e => OPT.autoMove = e.target.checked;
+$('btnReset').onclick = resetStats;
+$('btnDefaults').onclick = () => { Object.assign(P, DEFAULTS); buildSliders(); };
+// keep keyboard focus off the panel controls so Space / J still swing
+document.querySelectorAll('#panel button, #panel input').forEach(el => el.addEventListener('mouseup', () => el.blur()));
+$('panel').addEventListener('change', () => document.activeElement && document.activeElement.blur());
+
+// ---------- Start / pause / restart ----------
+game.started = false;
+function setPaused(p) {
+    game.paused = p;
+    if (p) { game.ents.forEach(x => x.charge = null); game.keys.clear(); }
+    else game.started = true;
+    $('btnPause').textContent = t(p ? (game.started ? '▶ 继续' : '▶ 开始') : '⏸ 暂停');
+    $('overlay').classList.toggle('hidden', !p);
+    $('ovTitle').textContent = t(game.started ? '已暂停' : '网球手感原型');
+    $('ovSub').textContent = TOUCH_UI ? t(game.started ? '点按钮继续' : '点「开始」，游戏中点左上角暂停')
+        : t(game.started ? '按 P / Esc / Enter 或点击按钮继续' : '按 Enter 或点击按钮开始；游戏中 P / Esc 暂停');
+    $('btnStart').textContent = t(game.started ? '▶ 继续' : '▶ 开始');
+}
+function togglePause() { if (game.started || game.paused) setPaused(!game.paused); }
+function restart() { setMode(game.mode); game.started = false; setPaused(false); }
+$('btnStart').onclick = () => setPaused(false);
+$('btnPause').onclick = togglePause;
+$('btnRestart').onclick = restart;
+// don't let these buttons keep focus, or Space would "click" them instead of swinging
+document.querySelectorAll('#ctrl button, #overlay button, #panel button').forEach(el => el.addEventListener('click', () => el.blur()));
+setMode('machine');
+setPaused(true);
+$('btnLang').onclick = () => setLang(LANG === 'en' ? 'zh' : 'en');
+$('btnLang').addEventListener('click', () => $('btnLang').blur());
+applyLang();
+
+// ---------- Loop ----------
+let last = performance.now();
+function frame(now) {
+    const dt = (now - last) / 1000; last = now;
+    update(dt);
+    render();
+    updateHud();
+    requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// Exposed for debugging / automated checks
+window.__tennis = { game, P, OPT, setMode, update, setPaused, restart, setLang, t };
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+    "name": "tennis-feel-prototype",
+    "version": "0.4.0",
+    "private": true,
+    "description": "Single-file HTML/JS tennis feel prototype with a one-click automated test (FPS, battery, hit-rate difficulty tuning).",
+    "scripts": {
+        "test": "node tests/run-autotest.js",
+        "test:mobile": "node tests/run-autotest.js --device \"Pixel 7\" --cpu 4"
+    },
+    "devDependencies": {
+        "playwright": "1.64.1"
+    }
+}
