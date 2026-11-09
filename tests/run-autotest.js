@@ -22,7 +22,7 @@ const outDir = path.resolve(opt('out', './autotest-results'));
     if (device && !base) throw new Error('Unknown device: ' + device);
     // landscape for phones: the game is played sideways
     const ctxOpts = Object.assign({}, base, base.isMobile ? { viewport: { width: base.viewport.height, height: base.viewport.width } } : {});
-    ctxOpts.userAgent = `${base.userAgent || defaultUA} QAgent/${owner || 'unknown'} (Canva QA; Playwright; +internal)`;
+    ctxOpts.userAgent = `${base.userAgent || defaultUA} mia/${owner || 'unknown'} (mia; Playwright; +internal)`;
     const context = await browser.newContext(ctxOpts);
     const page = await context.newPage();
     const errors = [];
