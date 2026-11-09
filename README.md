@@ -2,7 +2,7 @@
 
 [English](#english) · [中文](#中文)
 
-**▶ Play online / 在线试玩:** `https://200z.github.io/mia-tennis-prototyping/`  -->
+**▶ Play online / 在线试玩:** https://200z.github.io/mia-tennis-prototyping/
 
 ![Start screen in English: tennis court in perspective with mode buttons for Ball machine, Rally vs AI, 2 players and Doubles / 英文开始画面：透视网球场和四个模式按钮](docs/images/start-screen-en.png)
 
