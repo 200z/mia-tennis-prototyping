@@ -56,9 +56,9 @@ The command line exits with code 1 on any FAIL, so it can run in CI. Reports (JS
 
 | Document | What it covers |
 |---|---|
-| [Test strategy (EN)](docs/test-strategy.en.md) · [测试策略（中文）](docs/test-strategy.zh.md) | Risk-based scope, 6 test levels, device matrix, entry/exit criteria, defect severity, regression checklist |
-| [Test cases (EN)](docs/test-cases.en.md) | 90 game-specific cases across 14 areas (timing, physics, input, pause, multiplayer, i18n…) |
-| [Automated test guide (中文)](docs/autotest-guide.zh.md) | How to run the automated test, check thresholds, how hit rates are measured |
+| [Test strategy](docs/test-strategy.en.md)  | Risk-based scope, 6 test levels, device matrix, entry/exit criteria, defect severity, regression checklist |
+| [Test cases](docs/test-cases.en.md) | 90 game-specific cases across 14 areas (timing, physics, input, pause, multiplayer, i18n…) |
+| [Automated test guide](docs/autotest-guide.zh.md) | How to run the automated test, check thresholds, how hit rates are measured |
 
 ### Decisions and trade-offs
 
@@ -132,9 +132,9 @@ npm run test:mobile       # Pixel 7 屏幕 + CPU 降速 4 倍（模拟中端手�
 
 | 文档 | 内容 |
 |---|---|
-| [测试策略（中文）](docs/test-strategy.zh.md) · [Test strategy (EN)](docs/test-strategy.en.md) | 按风险定范围、6 个测试层级、设备矩阵、准入准出、缺陷分级、回归清单 |
-| [测试用例 (EN)](docs/test-cases.en.md) | 14 个方面共 90 条游戏专项用例（时机、物理、输入、暂停、多人、多语言等） |
-| [自动化测试说明（中文）](docs/autotest-guide.zh.md) | 怎么跑、各检查项的通过标准、命中率怎么算 |
+| [Test strategy ](docs/test-strategy.en.md) | 按风险定范围、6 个测试层级、设备矩阵、准入准出、缺陷分级、回归清单 |
+| [测试用例 ](docs/test-cases.en.md) | 14 个方面共 90 条游戏专项用例（时机、物理、输入、暂停、多人、多语言等） |
+| [自动化测试说明](docs/autotest-guide.zh.md) | 怎么跑、各检查项的通过标准、命中率怎么算 |
 
 ### 设计决定和取舍
 
